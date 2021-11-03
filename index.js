@@ -1,5 +1,9 @@
 "use strict";
 
+if (process.env.NODE_ENV !== "production") {
+  require("dotenv").config();
+}
+
 const { createAppAuth } = require("@octokit/auth-app");
 const { Octokit } = require("@octokit/rest");
 
@@ -8,10 +12,6 @@ const compression = require("compression");
 
 const IpFilter = require("express-ipfilter").IpFilter;
 const ips = process.env["IP_ALLOW_LIST"].split(",");
-
-if (process.env.NODE_ENV !== "production") {
-  require("dotenv").config();
-}
 
 const privateKey = Buffer.from(process.env.PRIVATE_KEY, "base64").toString();
 
@@ -57,15 +57,9 @@ async function run() {
         const installationId = installation.data.id;
         const installationClient = await makeInstallationClient(installationId);
 
-        const commit = await installationClient.rest.git.getCommit({
-          owner,
-          repo,
-          commit_sha: req.body.head_sha,
-        });
-
-        if (!commit) {
-          console.error("Invalid commit SHA");
-          res.status(400).send("Invalid commit SHA");
+        if (!req.body.head_sha) {
+          console.error("Missing head_sha");
+          res.status(400).send("Missing head_sha");
           return;
         }
 
